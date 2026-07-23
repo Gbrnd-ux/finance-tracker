@@ -1,0 +1,119 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// 1. Model Pemasukan (Income)
+model Income {
+  id          String   @id @default(cuid())
+  amount      Float
+  source      String
+  date        DateTime @default(now())
+  description String?
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  allocations Allocation[] // Relasi ke hasil alokasi pembagian income
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// 2. Model Kategori Budget (Category)
+model Category {
+  id                String       @id @default(cuid())
+  name              String
+  color             String?
+  defaultPercentage Float        @default(0) // Persentase default per kategori
+  
+  userId            String
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  allocations       Allocation[]
+  
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+}
+
+// 3. Model Alokasi (Allocation) - Mencatat hasil pembagian per Income
+model Allocation {
+  id         String   @id @default(cuid())
+  amount     Float    // Nominal uang hasil pembagian
+  
+  incomeId   String
+  income     Income   @relation(fields: [incomeId], references: [id], onDelete: Cascade)
+  
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// 4. Model Tagihan (Bill)
+model Bill {
+  id          String     @id @default(cuid())
+  name        String     // Nama tagihan
+  type        String     // Jenis (motor/mobil/listrik/lainnya)
+  vehiclePlate String?   // Khusus untuk tagihan kendaraan
+  amount      Float      // Nominal
+  dueDate     DateTime   // Tanggal jatuh tempo
+  isPaid      Boolean    @default(false) // Status lunas/belum
+  recurring   String     @default("NONE") // NONE, MONTHLY, YEARLY
+  
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  reminders   Reminder[]
+  
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+// 5. Model Pengingat (Reminder)
+model Reminder {
+  id        String   @id @default(cuid())
+  remindAt  DateTime
+  isSent    Boolean  @default(false)
+  
+  billId    String
+  bill      Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// 6. Model Pengaturan Umum (Settings)
+model Setting {
+  id    String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key    String
+  value  String
+
+  @@unique([userId, key])
+}
+
+// 7. Model User (untuk autentikasi)
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String   // bcrypt hashed
+  name      String?
+  
+  incomes    Income[]
+  categories Category[]
+  bills      Bill[]
+  settings   Setting[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
