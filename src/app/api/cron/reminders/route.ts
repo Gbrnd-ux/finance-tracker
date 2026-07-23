@@ -4,9 +4,11 @@ import { getTargetDateRange, formatIndonesianDate } from "@/lib/dates";
 import { sendTelegramMessage } from "@/lib/telegram";
 
 export async function GET(request: Request) {
-  // Dalam lingkungan produksi nyata, Anda harus menambahkan perlindungan bearer token
-  // agar endpoint cron ini tidak bisa dipanggil oleh publik sembarangan.
-  
+  // Perlindungan Vercel Cron Jobs menggunakan Bearer Token
+  const authHeader = request.headers.get('authorization');
+  if (process.env.NODE_ENV === 'production' && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   try {
     // 0. Ambil semua pengaturan notifikasi per user
     const notificationSettings = await prisma.setting.findMany({ 
