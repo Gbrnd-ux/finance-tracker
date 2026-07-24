@@ -61,6 +61,15 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   });
   const totalAllocated = allocationResult._sum.amount || 0;
 
+  // 3.5 Agregasi Total Pengeluaran dalam rentang terpilih
+  const expenseResult = await prisma.expense.aggregate({
+    _sum: { amount: true },
+    where: { userId, date: { gte: startDate, lte: endDate } },
+  });
+  const totalExpense = expenseResult._sum.amount || 0;
+  
+  const sisaSaldo = totalIncome - totalExpense;
+
   // 4. Agregasi Tagihan Belum Lunas (tidak bergantung pada rentang tanggal)
   const pendingBillsResult = await prisma.bill.aggregate({
     _sum: { amount: true },
@@ -180,38 +189,48 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       )}
 
       {/* SUMMARY CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center">
-          <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mr-4">
-            <Wallet className="w-7 h-7" />
+          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mr-4 shrink-0">
+            <Wallet className="w-6 h-6" />
           </div>
-          <div>
-            <p className="text-sm font-medium text-gray-500 mb-1">
-              {isFiltered ? "Pemasukan (Rentang)" : "Pemasukan (Bulan Ini)"}
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-gray-500 mb-1 truncate">
+              {isFiltered ? "Pemasukan (Filter)" : "Pemasukan (Bulan Ini)"}
             </p>
-            <h3 className="text-2xl font-bold text-gray-900">{formatRupiah(totalIncome)}</h3>
+            <h3 className="text-xl font-bold text-gray-900 truncate">{formatRupiah(totalIncome)}</h3>
           </div>
         </div>
 
         <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center">
-          <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mr-4">
-            <PieIcon className="w-7 h-7" />
+          <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mr-4 shrink-0">
+            <PieIcon className="w-6 h-6" />
           </div>
-          <div>
-            <p className="text-sm font-medium text-gray-500 mb-1">Total Teralokasi</p>
-            <h3 className="text-2xl font-bold text-gray-900">{formatRupiah(totalAllocated)}</h3>
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-gray-500 mb-1 truncate">Total Pengeluaran</p>
+            <h3 className="text-xl font-bold text-gray-900 truncate">{formatRupiah(totalExpense)}</h3>
           </div>
         </div>
 
         <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center">
-          <div className="w-14 h-14 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mr-4">
-            <BellRing className="w-7 h-7" />
+          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mr-4 shrink-0">
+            <Wallet className="w-6 h-6" />
           </div>
-          <div>
-            <p className="text-sm font-medium text-gray-500 mb-1">
-              Tagihan Belum Lunas ({pendingBillsCount})
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-gray-500 mb-1 truncate">Sisa Saldo Aktif</p>
+            <h3 className={`text-xl font-bold truncate ${sisaSaldo < 0 ? 'text-red-600' : 'text-emerald-600'}`}>{formatRupiah(sisaSaldo)}</h3>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center">
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mr-4 shrink-0">
+            <BellRing className="w-6 h-6" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-gray-500 mb-1 truncate">
+              Tagihan Belum Lunas
             </p>
-            <h3 className="text-2xl font-bold text-red-600">{formatRupiah(totalPendingBillsAmount)}</h3>
+            <h3 className="text-xl font-bold text-amber-600 truncate">{formatRupiah(totalPendingBillsAmount)}</h3>
           </div>
         </div>
       </div>
@@ -236,27 +255,34 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       {/* QUICK ACTIONS */}
       <div className="pt-6">
         <h2 className="text-lg font-bold text-gray-900 mb-4">Akses Cepat</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <Link
             href="/pemasukan"
             className="block p-6 bg-blue-50/50 hover:bg-blue-50 border border-blue-100/50 rounded-2xl transition-colors"
           >
             <h3 className="text-lg font-bold text-blue-800 mb-1">Catat Pemasukan</h3>
-            <p className="text-blue-600/80 text-sm">Tambah uang masuk baru.</p>
+            <p className="text-blue-600/80 text-sm">Tambah uang masuk.</p>
+          </Link>
+          <Link
+            href="/pengeluaran"
+            className="block p-6 bg-rose-50/50 hover:bg-rose-50 border border-rose-100/50 rounded-2xl transition-colors"
+          >
+            <h3 className="text-lg font-bold text-rose-800 mb-1">Catat Pengeluaran</h3>
+            <p className="text-rose-600/80 text-sm">Catat pengeluaran baru.</p>
           </Link>
           <Link
             href="/budget"
             className="block p-6 bg-emerald-50/50 hover:bg-emerald-50 border border-emerald-100/50 rounded-2xl transition-colors"
           >
             <h3 className="text-lg font-bold text-emerald-800 mb-1">Atur Budget</h3>
-            <p className="text-emerald-600/80 text-sm">Ubah persentase kategori.</p>
+            <p className="text-emerald-600/80 text-sm">Lihat sisa alokasi.</p>
           </Link>
           <Link
             href="/tagihan"
-            className="block p-6 bg-purple-50/50 hover:bg-purple-50 border border-purple-100/50 rounded-2xl transition-colors"
+            className="block p-6 bg-amber-50/50 hover:bg-amber-50 border border-amber-100/50 rounded-2xl transition-colors"
           >
-            <h3 className="text-lg font-bold text-purple-800 mb-1">Kelola Tagihan</h3>
-            <p className="text-purple-600/80 text-sm">Lihat daftar tagihan wajib.</p>
+            <h3 className="text-lg font-bold text-amber-800 mb-1">Kelola Tagihan</h3>
+            <p className="text-amber-600/80 text-sm">Cek tagihan wajib.</p>
           </Link>
         </div>
       </div>
