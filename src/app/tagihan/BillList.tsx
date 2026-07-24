@@ -1,20 +1,28 @@
 "use client";
 
 import { Bill } from "@prisma/client";
-import { markBillAsPaid, deleteBill } from "@/app/actions/bills";
-import { useState } from "react";
+import { deleteBill, markBillAsPaid } from "@/app/actions/bills";
+import { useState, useTransition } from "react";
 import { isOverdue, isWithinNextDays, formatIndonesianDate } from "@/lib/dates";
 
 export default function BillList({ bills }: { bills: Bill[] }) {
   const [filter, setFilter] = useState<"ALL" | "UNPAID" | "THIS_WEEK">("ALL");
+  const [isPending, startTransition] = useTransition();
 
-  const handleToggleStatus = async (id: string, currentStatus: boolean) => {
-    await markBillAsPaid(id, currentStatus);
+  const handleToggleStatus = (id: string, currentStatus: boolean) => {
+    startTransition(async () => {
+      await markBillAsPaid(id, currentStatus);
+    });
   };
 
-  const handleDelete = async (id: string, name: string) => {
+  const handleDelete = (id: string, name: string) => {
     if (confirm(`Yakin ingin menghapus tagihan "${name}"?`)) {
-      await deleteBill(id);
+      startTransition(async () => {
+        const res = await deleteBill(id);
+        if (res && !res.success) {
+          alert(res.error || "Gagal menghapus tagihan.");
+        }
+      });
     }
   };
 
@@ -139,7 +147,8 @@ export default function BillList({ bills }: { bills: Bill[] }) {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleToggleStatus(bill.id, bill.isPaid)}
-                      className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      disabled={isPending}
+                      className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
                         bill.isPaid 
                           ? 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                           : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm'
@@ -150,7 +159,8 @@ export default function BillList({ bills }: { bills: Bill[] }) {
                     
                     <button
                       onClick={() => handleDelete(bill.id, bill.name)}
-                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      disabled={isPending}
+                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                       title="Hapus Tagihan"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>

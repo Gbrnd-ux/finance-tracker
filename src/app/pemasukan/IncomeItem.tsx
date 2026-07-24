@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 interface Income {
@@ -16,6 +16,7 @@ export default function IncomeItem({ income }: { income: Income }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   const [formData, setFormData] = useState({
     source: income.source,
@@ -33,7 +34,9 @@ export default function IncomeItem({ income }: { income: Income }) {
         method: "DELETE",
       });
       if (res.ok) {
-        router.refresh();
+        startTransition(() => {
+          router.refresh();
+        });
       } else {
         alert("Gagal menghapus data.");
       }
@@ -57,7 +60,9 @@ export default function IncomeItem({ income }: { income: Income }) {
       
       if (res.ok) {
         setIsEditing(false);
-        router.refresh();
+        startTransition(() => {
+          router.refresh();
+        });
       } else {
         const json = await res.json();
         alert(json.error || "Gagal memperbarui data.");

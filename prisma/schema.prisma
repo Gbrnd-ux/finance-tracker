@@ -38,6 +38,7 @@ model Category {
   user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   allocations       Allocation[]
+  expenses          Expense[]
   
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
@@ -91,7 +92,24 @@ model Reminder {
   updatedAt DateTime @updatedAt
 }
 
-// 6. Model Pengaturan Umum (Settings)
+// 6. Model Pengeluaran (Expense)
+model Expense {
+  id          String   @id @default(cuid())
+  amount      Float
+  description String
+  date        DateTime @default(now())
+  
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// 7. Model Pengaturan Umum (Settings)
 model Setting {
   id    String @id @default(cuid())
   userId String
@@ -113,6 +131,7 @@ model User {
   categories Category[]
   bills      Bill[]
   settings   Setting[]
+  expenses   Expense[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

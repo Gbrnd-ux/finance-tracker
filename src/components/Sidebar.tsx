@@ -12,12 +12,14 @@ import {
   Settings,
   Menu,
   X,
-  LogOut
+  LogOut,
+  Receipt
 } from "lucide-react";
 
 const navItems = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Pemasukan", href: "/pemasukan", icon: Wallet },
+  { name: "Pengeluaran", href: "/pengeluaran", icon: Receipt },
   { name: "Budget", href: "/budget", icon: PieChart },
   { name: "Tagihan", href: "/tagihan", icon: BellRing },
   { name: "Pengaturan", href: "/pengaturan", icon: Settings },

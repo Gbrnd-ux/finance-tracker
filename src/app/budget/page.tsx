@@ -65,14 +65,31 @@ export default async function BudgetPage({ searchParams }: PageProps) {
     _sum: { amount: true }
   });
 
-  const totalMonthlyIncome = monthlyAllocations.reduce((sum, alloc) => sum + (alloc._sum.amount || 0), 0);
+  // Query agregasi untuk total pengeluaran per kategori di bulan terpilih
+  const monthlyExpenses = await prisma.expense.groupBy({
+    by: ['categoryId'],
+    where: {
+      userId,
+      date: { gte: startDate, lte: endDate }
+    },
+    _sum: { amount: true }
+  });
 
-  // Siapkan data untuk Pie Chart
+  const totalMonthlyIncome = monthlyAllocations.reduce((sum, alloc) => sum + (alloc._sum.amount || 0), 0);
+  const totalMonthlyExpense = monthlyExpenses.reduce((sum, exp) => sum + (exp._sum.amount || 0), 0);
+
+  // Siapkan data untuk Pie Chart (menampilkan Sisa Budget yang masih positif)
   const pieChartData = categories.map(cat => {
     const alloc = monthlyAllocations.find(a => a.categoryId === cat.id);
+    const exp = monthlyExpenses.find(e => e.categoryId === cat.id);
+    
+    const allocated = alloc?._sum.amount || 0;
+    const spent = exp?._sum.amount || 0;
+    const remaining = Math.max(0, allocated - spent);
+    
     return {
       name: cat.name,
-      value: alloc?._sum.amount || 0,
+      value: remaining,
       color: cat.color || "#ccc"
     };
   }).filter(data => data.value > 0);
@@ -169,7 +186,11 @@ export default async function BudgetPage({ searchParams }: PageProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {categories.map(cat => {
                 const alloc = monthlyAllocations.find(a => a.categoryId === cat.id);
-                const amount = alloc?._sum.amount || 0;
+                const exp = monthlyExpenses.find(e => e.categoryId === cat.id);
+                
+                const allocated = alloc?._sum.amount || 0;
+                const spent = exp?._sum.amount || 0;
+                const remaining = allocated - spent;
                 
                 return (
                   <div key={cat.id} className="p-5 bg-gray-50/50 rounded-2xl border border-gray-100 flex flex-col justify-between hover:shadow-md transition-shadow">
@@ -180,11 +201,21 @@ export default async function BudgetPage({ searchParams }: PageProps) {
                       />
                       <span className="font-bold text-gray-700">{cat.name}</span>
                     </div>
-                    <div className="mt-auto">
-                      <p className="text-sm text-gray-500 mb-1">Saldo Tersedia:</p>
-                      <p className="text-2xl font-bold text-emerald-600">
-                        Rp {amount.toLocaleString("id-ID")}
-                      </p>
+                    <div className="mt-auto space-y-2">
+                      <div className="flex justify-between text-xs text-gray-500">
+                        <span>Alokasi:</span>
+                        <span className="font-medium text-gray-700">Rp {allocated.toLocaleString("id-ID")}</span>
+                      </div>
+                      <div className="flex justify-between text-xs text-gray-500">
+                        <span>Terpakai:</span>
+                        <span className="font-medium text-rose-600">Rp {spent.toLocaleString("id-ID")}</span>
+                      </div>
+                      <div className="pt-2 border-t border-gray-200">
+                        <p className="text-xs text-gray-500 mb-1">Sisa Saldo:</p>
+                        <p className={`text-xl font-bold ${remaining < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                          Rp {remaining.toLocaleString("id-ID")}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 );
