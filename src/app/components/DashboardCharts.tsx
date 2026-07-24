@@ -23,6 +23,7 @@ type AllocationData = {
 type IncomeVsBillData = {
   name: string;
   Pemasukan: number;
+  Pengeluaran: number;
   Tagihan: number;
 };
 
@@ -74,7 +75,7 @@ export default function DashboardCharts({
 
       {/* CARD 2: BAR CHART PEMASUKAN VS PENGELUARAN */}
       <div className="bg-white p-5 sm:p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col">
-        <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4 border-b pb-3">Pemasukan vs Tagihan</h2>
+        <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-4 border-b pb-3">Pemasukan vs Pengeluaran & Tagihan</h2>
         
         <div className="flex-1 w-full min-h-[240px] sm:min-h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
@@ -95,7 +96,8 @@ export default function DashboardCharts({
               />
               <Legend />
               <Bar dataKey="Pemasukan" fill="#10B981" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Tagihan" fill="#EF4444" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Pengeluaran" fill="#F43F5E" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Tagihan" fill="#F59E0B" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
